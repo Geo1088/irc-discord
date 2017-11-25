@@ -1,0 +1,14 @@
+{
+  "name": "less-shitty-irc",
+  "version": "0.0.0",
+  "description": "A script for interfacing with an IRC server from Discord.",
+  "main": "index.js",
+  "author": "Geo1088 <georgej1088@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "bimap": "^0.0.15",
+    "eris": "^0.8.1",
+    "irc-framework": "^2.9.1",
+    "moment": "^2.19.2"
+  }
+}
