@@ -4,16 +4,6 @@ const BiMap = require('bimap')
 const moment = require('moment')
 
 const config = require('./config')
-// NOTE: Some random notes on the above config. Some of these are TODOs because
-//       I'm lazy and some are just notes on meaning because I'm bad at names.
-//       - eris.channelPrefix, eris.userPrefix: These exist because if you want
-//         to mention a channel in irc, but the name matches exactly, doing
-//         (for example) #enhancement in discord will be replaced with a channel
-//         mention (i.e. <@#bunch of digits>) which won't mean anything to IRC
-//         clients. TO prevent that, the Discord channels are named differently
-//         so that automatic process doesn't happen. In the future, the client
-//         should handle this directly by turning mentions of all types back
-//         into plain text for IRC to handle.
 
 const dc = new eris(config.eris.token)
 const irc = new IRC.Client()
