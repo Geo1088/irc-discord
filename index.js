@@ -187,7 +187,6 @@ irc.on('kick', e => {
 })
 
 function handleIrcThing (type, e, discordChannelIds) {
-	const time = `\`${moment().format('HH:mm:ss')}\``
 	let message = ''
 	// NOTE: \u2002 below is a figure space (larger than \u0020).
 
