@@ -1,11 +1,12 @@
 const IRC = require('irc-framework')
-const eris = require('eris')
+const colors = require('irc-colors')
+const Eris = require('eris')
 const BiMap = require('bimap')
 const moment = require('moment')
 
 const config = require('./config')
 
-const dc = new eris(config.eris.token)
+const dc = new Eris.Client(config.eris.token)
 const irc = new IRC.Client()
 irc.connect({
 	host: config.irc.host,
@@ -188,7 +189,6 @@ irc.on('kick', e => {
 
 function handleIrcThing (type, e, discordChannelIds) {
 	let message = ''
-	// NOTE: \u2002 below is a figure space (larger than \u0020).
 
 	// Format the message acording to its type
 	switch (type) {
@@ -233,9 +233,13 @@ function handleIrcThing (type, e, discordChannelIds) {
 			break
 	}
 
+	// Strip IRC color codes from the message
+	message = colors.stripColorsAndStyle(message)
+
 	// If we were mentioned in a privmsg or action, ping us.
 	if (['privmsg', 'action'].includes(type)) {
 		if (e.message.toLowerCase().indexOf(irc.user.nick.toLowerCase()) >= 0) {
+			// TODO: Dynamically use the ID of the bot's owner for this
 			message += ' (<@122902150291390469>)'
 		}
 	}
