@@ -112,50 +112,44 @@ dc.on('messageCreate', msg => {
 			const channel = guild.channels.get(id)
 			return `#${channel.name}`
 		})
-	
-	console.log(msg.content, '\n', text)
-	
+
 	// Send the modified message to the IRC channel.
 	irc.say(ircName, text)
 
-	// Delete the Discord message and replace it with one in the proper format.
-	// NOTE: This uses a timeout because otherwise the client was freaking out.
-	msg.channel.deleteMessage(msg.id).then(setTimeout(() => {
-		// NOTE: Getting the time here is slightly more accurate than using the
-		//       Discord message's time, since the message will be displayed in IRC.
-		const time = moment().format('HH:mm:ss')
-		const text = `\`${time}\` **\`\`${irc.user.nick}\`\`** ${msg.content}`
-		msg.channel.createMessage(text)
+	// If the configured to, delete the Discord message and replace it with one in
+	// the proper format.
+	// NOTE: This uses a timeout because otherwise the client was freaking out. We
+	//       also create a fake message object here to keep the format consistent;
+	//       however, this object is not complete, and only includes properties
+	//       that change its text representation.
+	msg.channel.deleteMessage(msg.id).then(() => setTimeout(() => {
+		const message = {
+			nick: irc.user.nick,
+			message: msg.content
+		}
+		handleIrcThing('privmsg', message, msg.channel.id)
 	}), 50)
 })
 
-// Handle message from IRC and send them to the correct Discord channel.
+// Handle messages from IRC and send them to the correct Discord channel.
 irc.on('notice', e => {
-	console.log(`[irc][notice]${e.from_server ? '[server]' : ''} ${e.message}`)
+	console.log(`[irc][notice] ${e.from_server ? '[server]' : `<${e.nick}>`} ${e.message}`)
+	// TODO
+})
+irc.on('wallops', e => {
+	console.log(`[irc][wallops] ${e.from_server ? '[server]' : `<${e.nick}>`} ${e.message}`)
+	// TODO
 })
 irc.on('privmsg', e => {
 	console.log(`[irc] ${e.target}: <${e.nick}> ${e.message}`)
+	let discordChannelId
 	if (e.target.startsWith('#')) {
-		const discordChannelId = channelMap.key(e.target)
-
-		// If the message mentions us, add a ping.
-		if (e.message.toLowerCase().indexOf(irc.user.nick.toLowerCase()) >= 0) {
-			e.message += ` (<@${config.ownerId}>)`
-		}
-
-		// Format the message with the time, author, etc.
-		// NOTE: Getting the time here is less accurate, but snoonet doesn't seem to
-		//       send message times. /shrug
-		const time = moment().format('HH:mm:ss')
-		const text = `\`${time}\` **\`\`${e.nick}\`\`** ${e.message}`
-
-		// Send the message.
-		dc.createMessage(discordChannelId, text)
+		discordChannelId = channelMap.key(e.target)
 	} else {
 		// TODO
 		return
 	}
-	handleIrcThing()
+	handleIrcThing('privmsg', e, discordChannelId)
 })
 irc.on('action', e => {
 	let discordChannelId
@@ -168,41 +162,84 @@ irc.on('action', e => {
 	handleIrcThing('action', e, discordChannelId)
 })
 irc.on('nick', e => {
-	// TODO: Don't send to all channels, just the ones that this user is in
-	const discordChannelId = ''
+	// TODO: Filter this so it only includes channels the user was actually in
+	const discordChannelId = Object.keys(channelMap.vk)
 	handleIrcThing ('nick', e, discordChannelId)
+})
+irc.on('join', e => {
+	const discordChannelId = channelMap.key(e.channel)
+	handleIrcThing('join', e, discordChannelId)
+})
+irc.on('part', e => {
+	const discordChannelId = channelMap.key(e.channel)
+	handleIrcThing('part', e, discordChannelId)
+})
+irc.on('quit', e => {
+	// TODO: Filter this so it only includes channels the user was actually in
+	const discordChannelId = Object.keys(channelMap.vk)
+	handleIrcThing ('quit', e, discordChannelId)	
+})
+irc.on('kick', e => {
+	const discordChannelId = channelMap.key(e.channel)
+	handleIrcThing('kick', e, discordChannelId)
 })
 
 function handleIrcThing (type, e, discordChannelIds) {
 	const time = `\`${moment().format('HH:mm:ss')}\``
 	let message = ''
+	// NOTE: \u2002 below is a figure space (larger than \u0020).
 
 	// Format the message acording to its type
 	switch (type) {
 		case 'privmsg':
-			console.log(`[irc] ${e.target}: <${e.nick}> ${e.message}`)
-			// If we were mentioned, add a ping
-			if (e.message.toLowerCase().indexOf(irc.user.nick.toLowerCase()) >= 0) {
-				e.message += ' <@122902150291390469>'
-			}
-			message = `${time} **\`\`${e.nick}\`\`** ${e.message}`
+			message = `**\`\`${e.nick}\`\`** ${e.message}`
 			break
 		
 		case 'action':
-			console.log(`[irc] ${e.target}: * ${e.nick} ${e.message}`)
-			// If we were mentioned, add a ping
-			if (e.message.toLowerCase().indexOf(irc.user.nick.toLowerCase()) >= 0) {
-				e.message += ' <@122902150291390469>'
-			}
-			message = `${time} * *\`\`${e.nick}\`\`* ${e.message}`
+			message = `\`\`* ${e.nick}\`\` ${e.message}`
+			break
+		
+		case 'wallops':
+			message = `[global]${e.from_server ? '[server]' : `**\`\`${e.nick}\`\`**`} ${e.message}`
 			break
 
 		case 'nick':
-			console.log(`[irc] ${e.nick} --> ${e.new_nick}`)
-			message = `${time} \`\`${e.nick} ->\`\` **\`\`${e.new_nick}\`\`**`
+			message = `**\`===\`** \↔ \`\`${e.nick}\`\` is now **\`\`${e.new_nick}\`\`**`
+			break
+		
+		case 'away':
+			message = `⇠ **\`\`${e.nick}\`\`** went away${e.message ? ` (${e.message})` : ''}`
+			break
+		
+		case 'back':
+			message = `⇢ **\`\`${e.nick}\`\`** is back${e.message ? ` (${e.message})` : ''}`
+			break
+		
+		case 'join':
+			message = `→ **\`\`${e.nick}\`\`** has joined`
+			break
+		
+		case 'part':
+			message = `← \`\`${e.nick}\`\` has left (Part${e.message ? `: ${e.message}` : ''})`
+			break
+
+		case 'quit':
+			message = `← \`\`${e.nick}\`\` has left (Quit${e.message ? `: ${e.message}` : ''})`
+			break
+		
+		case 'kick':
+			message = `← \`\`${e.kicked}\`\` has left (Kicked by **\`\`${e.nick}\`\`**${e.reason ? `: ${e.reason}` : ''})`
 			break
 	}
 
+	// If we were mentioned in a privmsg or action, ping us.
+	if (['privmsg', 'action'].includes(type)) {
+		if (e.message.toLowerCase().indexOf(irc.user.nick.toLowerCase()) >= 0) {
+			message += ' (<@122902150291390469>)'
+		}
+	}
+
+	// Since this could be an array or not, convert it to an array and loop.
 	if (!Array.isArray(discordChannelIds)) {
 		discordChannelIds = [discordChannelIds]
 	}
