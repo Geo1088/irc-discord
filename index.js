@@ -178,12 +178,12 @@ irc.on('part', e => {
 })
 irc.on('quit', e => {
 	// TODO: Filter this so it only includes channels the user was actually in
-	const discordChannelId = Object.keys(channelMap.vk)
-	handleIrcThing ('quit', e, discordChannelId)	
+	const discordChannelIds = Object.keys(channelMap.vk)
+	handleIrcThing ('quit', e, discordChannelIds)
 })
 irc.on('kick', e => {
-	const discordChannelId = channelMap.key(e.channel)
-	handleIrcThing('kick', e, discordChannelId)
+	const discordChannelIds = channelMap.key(e.channel)
+	handleIrcThing('kick', e, discordChannelIds)
 })
 
 function handleIrcThing (type, e, discordChannelIds) {
