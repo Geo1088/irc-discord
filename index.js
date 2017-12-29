@@ -122,13 +122,15 @@ dc.on('messageCreate', msg => {
 	//       also create a fake message object here to keep the format consistent;
 	//       however, this object is not complete, and only includes properties
 	//       that change its text representation.
-	msg.channel.deleteMessage(msg.id).then(() => setTimeout(() => {
-		const message = {
-			nick: irc.user.nick,
-			message: msg.content
-		}
-		handleIrcThing('privmsg', message, msg.channel.id)
-	}), 50)
+	if (config.replaceMessages) {
+		msg.channel.deleteMessage(msg.id).then(() => setTimeout(() => {
+			const message = {
+				nick: irc.user.nick,
+				message: msg.content
+			}
+			handleIrcThing('privmsg', message, msg.channel.id)
+		}), 50)
+	}
 })
 
 // Handle messages from IRC and send them to the correct Discord channel.

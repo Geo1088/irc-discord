@@ -10,6 +10,7 @@
 	},
 	"ownerId": "999999999999999999",
 	"guildId": "698234098613183470",
+	"replaceMessages": false,
 	"channels": [
 		"#channel-1",
 		"#channel-2"
