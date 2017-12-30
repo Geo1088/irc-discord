@@ -3,41 +3,66 @@ const colors = require('irc-colors')
 const Eris = require('eris')
 const BiMap = require('bimap')
 const moment = require('moment')
-
 const config = require('./config')
 
 const dc = new Eris.Client(config.eris.token)
 const irc = new IRC.Client()
-irc.connect({
-	host: config.irc.host,
-	port: config.irc.port,
-	nick: config.irc.nick
-})
+
+let guild // The guild the bot is connected to
+let channelsCategoryId // The ID of the category representing IRC channels
+let usersCategoryId // The ID of the category representing IRC private messages
+let noticesChannelId // The ID of the channel for displaying notices/wallops
+let channelMap = new BiMap()
 
 dc.on('error', console.error)
+dc.on('ready', () => {
+	console.log('Discord client connected.')
+
+	// We need the guild that we're going to be working with.
+	guild = dc.guilds.get(config.guildId)
+	if (!guild) {
+		console.log('Guild not found. Is the ID valid?')
+		process.exit(1)
+	}
+
+	// Once we have the guild, find the channel for notices and wallops.
+	const noticesChannel = guild.channels.find(c => c.name === 'notices' && c.type === 0 && !c.parentID)
+	if (!noticesChannel) {
+		// TODO: Create these.
+		console.log('Guild has no notices channel. Create a text channel called #notices under no category.')
+		process.exit(1)
+	}
+	noticesChannelId = noticesChannel.id
+
+	// The guild also needs to have categories set up to differentiate between
+	// channels and users.
+	const channelsCategory = guild.channels.find(c => c.name === 'Channels' && c.type === 4)
+	const usersCategory = guild.channels.find(c => c.name === 'Private Messages' && c.type == 4)
+	if (!channelsCategory || !usersCategory) {
+		// TODO: Create these.
+		console.log('Guild does not have the right categories. Create categories called "Channels" and "Private Messages".')
+		process.exit(1)
+	}
+	channelsCategoryId = channelsCategory.id
+	usersCategoryId = usersCategory.id
+
+	// Now that we know the guild is all set, we can connect to IRC.
+	irc.connect({
+		host: config.irc.host,
+		port: config.irc.port,
+		nick: config.irc.nick
+	})
+})
 
 irc.on('registered', () => {
 	console.log('IRC client connected.')
+	// If we have a nickserv password, use it immediately.
 	if (config.irc.nickservPass) {
 		irc.say('NickServ', `identify ${config.irc.nickservPass}`)
 	}
 	// Note: At this point if the user is registered they may not have the proper
 	//       channel modes and stuff. If stuff happens that relies on that, we
-	//       shouldn't call dc.connect() until we hear back from NickServ.
-	dc.connect()
-})
-
-// Both things are now ready.
-let channelMap = new BiMap()
-dc.on('ready', () => {
-	console.log('Discord client connected.')
-
-	// We need the guild that we're going to be working with.
-	const guild = dc.guilds.get(config.guildId)
-	if (!guild) {
-		console.log('Guild not found. Is the ID valid?')
-		process.exit(1)
-	}
+	//       shouldn't continue until we hear back from NickServ.
 
 	// Set up the channel map - associate each IRC channel with a Discord channel.
 	for (let channel of config.channels) {
@@ -67,19 +92,17 @@ dc.on('ready', () => {
 			.replace(/^[-_]/, '')
 
 		// With this name, see if the channel exists.
-		let discordChannel = guild.channels.find(c => c.name === discordName)
+		let discordChannel = guild.channels.find(c => c.name === discordName && c.parentID === channelsCategoryId)
 		if (discordChannel) {
 			channelMap.push(name, discordChannel.id)
 		} else {
 			// TODO: Refactor this code so we can create channels here. For now,
 			//       just yell about it.
-			console.log(`No Discord channel found for IRC channel ${name} (was expecting ${discordName}).`)
+			console.log(`No Discord channel found for IRC channel ${name} (was expecting #${discordName}). If it's there, is it in the right category?`)
 		}
 	}
 
-	// TODO: Also add a channel that can be used to display IRC notices.
-
-	// The channel map is now complete.
+	// The channel map is now complete. We're ready to start bridging messages.
 	console.log(channelMap.kv)
 	console.log()
 })
@@ -130,13 +153,14 @@ dc.on('messageCreate', msg => {
 })
 
 // Handle messages from IRC and send them to the correct Discord channel.
+// TODO: Honestly, just refactor these to work with `irc.on('message', ...)`.
 irc.on('notice', e => {
 	console.log(`[irc][notice] ${e.from_server ? '[server]' : `<${e.nick}>`} ${e.message}`)
-	// TODO
+	handleIrcThing('notice', e, noticesChannelId)
 })
 irc.on('wallops', e => {
 	console.log(`[irc][wallops] ${e.from_server ? '[server]' : `<${e.nick}>`} ${e.message}`)
-	// TODO
+	handleIrcThing('wallops', e, noticesChannelId)
 })
 irc.on('privmsg', e => {
 	console.log(`[irc] ${e.target}: <${e.nick}> ${e.message}`)
@@ -197,6 +221,10 @@ function handleIrcThing (type, e, discordChannelIds) {
 		
 		case 'wallops':
 			message = `[global]${e.from_server ? '[server]' : `**\`\`${e.nick}\`\`**`} ${e.message}`
+			break
+		
+		case 'notice':
+			message = `[notice]${e.from_server ? '[server]' : `**\`\`${e.nick}\`\`**`} ${e.message}`
 			break
 
 		case 'nick':
@@ -268,3 +296,5 @@ function handleCommand(msg) {
 		msg.channel.createMessage(things)
 	}
 }
+
+dc.connect()
