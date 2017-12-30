@@ -67,17 +67,10 @@ dc.on('ready', () => {
 			.replace(/^[-_]/, '')
 
 		// With this name, see if the channel exists.
-		guild.channels.forEach((discordChannel, discordChannelId) => {
-			// Must be a text channel.
-			if (discordChannel.type !== 0) return
-			// Must match our name.
-			if (discordChannel.name !== discordName) return
-			// TODO: Also make sure this Discord channel hasn't been used yet.
-
-			channelMap.push(name, discordChannelId)
-			// TODO: Stop the loop now.
-		})
-		if (!channelMap.key(name)) {
+		let discordChannel = guild.channels.find(c => c.name === discordName)
+		if (discordChannel) {
+			channelMap.push(name, discordChannel.id)
+		} else {
 			// TODO: Refactor this code so we can create channels here. For now,
 			//       just yell about it.
 			console.log(`No Discord channel found for IRC channel ${name} (was expecting ${discordName}).`)
