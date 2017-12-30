@@ -115,7 +115,6 @@ dc.on('messageCreate', msg => {
 	if (!msg.channel.guild) return handleCommand(msg)
 	// Also ignore this if it's not in a channel we know.
 	if (!channelMap.val(msg.channel.id)) return
-	console.log(`[dsc] #${msg.channel.name}: <${msg.author.username}> ${msg.content}`)
 
 	// Get the right IRC channel to send this message to.
 	const ircName = channelMap.val(msg.channel.id)
