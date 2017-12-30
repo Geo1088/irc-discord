@@ -155,15 +155,12 @@ dc.on('messageCreate', msg => {
 // Handle messages from IRC and send them to the correct Discord channel.
 // TODO: Honestly, just refactor these to work with `irc.on('message', ...)`.
 irc.on('notice', e => {
-	console.log(`[irc][notice] ${e.from_server ? '[server]' : `<${e.nick}>`} ${e.message}`)
 	handleIrcThing('notice', e, noticesChannelId)
 })
 irc.on('wallops', e => {
-	console.log(`[irc][wallops] ${e.from_server ? '[server]' : `<${e.nick}>`} ${e.message}`)
 	handleIrcThing('wallops', e, noticesChannelId)
 })
 irc.on('privmsg', e => {
-	console.log(`[irc] ${e.target}: <${e.nick}> ${e.message}`)
 	let discordChannelId
 	if (e.target.startsWith('#')) {
 		discordChannelId = channelMap.key(e.target)
@@ -214,35 +211,35 @@ function handleIrcThing (type, e, discordChannelIds) {
 		case 'privmsg':
 			message = `**\`\`${e.nick}\`\`** ${e.message}`
 			break
-		
+
 		case 'action':
 			message = `\`\`* ${e.nick}\`\` ${e.message}`
 			break
-		
+
 		case 'wallops':
-			message = `[global]${e.from_server ? '[server]' : `**\`\`${e.nick}\`\`**`} ${e.message}`
+			message = `\`[wallops]\` ${e.from_server ? '\`[server]\`' : `**\`\`${e.nick}\`\`**`} ${e.message}`
 			break
-		
+
 		case 'notice':
-			message = `[notice]${e.from_server ? '[server]' : `**\`\`${e.nick}\`\`**`} ${e.message}`
+			message = `\`[notice]\` ${e.from_server ? '\`[server]\`' : `**\`\`${e.nick}\`\`**`} ${e.message}`
 			break
 
 		case 'nick':
 			message = `**\`===\`** \↔ \`\`${e.nick}\`\` is now **\`\`${e.new_nick}\`\`**`
 			break
-		
+
 		case 'away':
 			message = `⇠ **\`\`${e.nick}\`\`** went away${e.message ? ` (${e.message})` : ''}`
 			break
-		
+
 		case 'back':
 			message = `⇢ **\`\`${e.nick}\`\`** is back${e.message ? ` (${e.message})` : ''}`
 			break
-		
+
 		case 'join':
 			message = `→ **\`\`${e.nick}\`\`** has joined`
 			break
-		
+
 		case 'part':
 			message = `← \`\`${e.nick}\`\` has left (Part${e.message ? `: ${e.message}` : ''})`
 			break
@@ -250,7 +247,7 @@ function handleIrcThing (type, e, discordChannelIds) {
 		case 'quit':
 			message = `← \`\`${e.nick}\`\` has left (Quit${e.message ? `: ${e.message}` : ''})`
 			break
-		
+
 		case 'kick':
 			message = `← \`\`${e.kicked}\`\` has left (Kicked by **\`\`${e.nick}\`\`**${e.reason ? `: ${e.reason}` : ''})`
 			break
@@ -272,8 +269,11 @@ function handleIrcThing (type, e, discordChannelIds) {
 		discordChannelIds = [discordChannelIds]
 	}
 	discordChannelIds.forEach(id => {
-		dc.createMessage(id, message)
-		// TODO: .then, .catch
+		dc.createMessage(id, message).then(msg => {
+			// Nothing else to do
+		}, err => {
+			console.log(err)
+		})
 	})
 }
 
