@@ -8,6 +8,7 @@
   "dependencies": {
     "bimap": "^0.0.15",
     "eris": "^0.8.1",
+    "irc-colors": "^1.4.1",
     "irc-framework": "^2.9.1",
     "moment": "^2.19.2"
   }

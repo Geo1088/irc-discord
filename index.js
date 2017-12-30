@@ -18,8 +18,8 @@ dc.on('error', console.error)
 
 irc.on('registered', () => {
 	console.log('IRC client connected.')
-	if (config.irc.pass) {
-		irc.say('NickServ', `identify ${config.irc.pass}`)
+	if (config.irc.nickservPass) {
+		irc.say('NickServ', `identify ${config.irc.nickservPass}`)
 	}
 	// Note: At this point if the user is registered they may not have the proper
 	//       channel modes and stuff. If stuff happens that relies on that, we

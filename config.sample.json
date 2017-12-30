@@ -6,7 +6,7 @@
 		"host": "irc.yourserver.com",
 		"port": 6667,
 		"nick": "some_nick",
-		"pass": "don't use this it's untested"
+		"nickservPass": "don't use this it's untested"
 	},
 	"ownerId": "999999999999999999",
 	"guildId": "698234098613183470",

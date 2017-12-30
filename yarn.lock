@@ -31,6 +31,10 @@ ipaddr.js@0.1.3:
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/ipaddr.js/-/ipaddr.js-0.1.3.tgz#27a9ca37f148d2102b0ef191ccbf2c51a8f025c6"
 
+irc-colors@^1.4.1:
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/irc-colors/-/irc-colors-1.4.1.tgz#ac8a3c8970f9be686fc6d678fd392af3d415fec0"
+
 irc-framework@^2.9.1:
   version "2.9.1"
   resolved "https://registry.yarnpkg.com/irc-framework/-/irc-framework-2.9.1.tgz#38f22b33e892528b385f2f787e7f3b2e0537e768"
