@@ -95,6 +95,8 @@ dc.on('ready', () => {
 dc.on('messageCreate', msg => {
 	// Ignore if this is a bot message.
 	if (msg.author.id === dc.user.id) return
+	// In here we do commands and stuff
+	if (!msg.channel.guild) return handleCommand(msg)
 	// Also ignore this if it's not in a channel we know.
 	if (!channelMap.val(msg.channel.id)) return
 	console.log(`[dsc] #${msg.channel.name}: <${msg.author.username}> ${msg.content}`)
@@ -252,4 +254,24 @@ function handleIrcThing (type, e, discordChannelIds) {
 		dc.createMessage(id, message)
 		// TODO: .then, .catch
 	})
+}
+
+
+function handleCommand(msg) {
+	console.log('== eval ==')
+	if (msg.content.startsWith('```') && msg.content.endsWith('```')) {
+		if (msg.content.startsWith('```js')) {
+			msg.content = msg.content.substring(5, msg.content.length - 3)
+		} else {
+			msg.content = msg.content.substring(3, msg.content.length - 3)
+		}
+		let things
+		try {
+			things = new String(eval(msg.content)).toString()
+		} catch (e) {
+			things = e.toString()
+		}
+		console.log(things)
+		msg.channel.createMessage(things)
+	}
 }
