@@ -224,7 +224,7 @@ function handleIrcThing (type, e, discordChannelIds) {
 			break
 
 		case 'nick':
-			message = `**\`===\`** \↔ \`\`${e.nick}\`\` is now **\`\`${e.new_nick}\`\`**`
+			message = `\\↔ \`\`${e.nick}\`\` is now **\`\`${e.new_nick}\`\`**`
 			break
 
 		case 'away':
