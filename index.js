@@ -12,7 +12,7 @@ let guild // The guild the bot is connected to
 let channelsCategoryId // The ID of the category representing IRC channels
 let usersCategoryId // The ID of the category representing IRC private messages
 let noticesChannelId // The ID of the channel for displaying notices/wallops
-let channelMap = new BiMap()
+let channelMap = new BiMap() // The bidirectional map of IRC channel names and Discord channel IDs
 
 dc.on('error', console.error)
 dc.on('ready', () => {
@@ -202,53 +202,64 @@ irc.on('kick', e => {
 	handleIrcThing('kick', e, discordChannelIds)
 })
 
+
+function formatNick (nick) {
+	nick = nick.replace(/`/g, '$&\u200B') // Add zero-width space after backtick to prevent escaping markdown
+	const isMe = nick === irc.user.nick // If this is my nick, underline it
+	return `${isMe ? '__' : ''}**\`\`${nick}\`\`**${isMe ? '__' : ''}`
+}
+function formatMessage (msg) {
+	// Escape anything that could possibly be a markdown trigger, woo overkill
+	return msg.replace(/[!@#$%^&*()`\-=~_+[\]\\{}|;':",./<>?]/g, '\\$&')
+}
+
 function handleIrcThing (type, e, discordChannelIds) {
 	let message = ''
 
 	// Format the message acording to its type
 	switch (type) {
 		case 'privmsg':
-			message = `**\`\`${e.nick}\`\`** ${e.message}`
+			message = `${formatNick(e.nick)} ${formatMessage(e.message)}`
 			break
 
 		case 'action':
-			message = `\`\`* ${e.nick}\`\` ${e.message}`
+			message = `\`*\` ${formatNick(e.nick)} ${formatMessage(e.message)}`
 			break
 
 		case 'wallops':
-			message = `\`[wallops]\` ${e.from_server ? '\`[server]\`' : `**\`\`${e.nick}\`\`**`} ${e.message}`
+			message = `\`[wallops]\` ${e.from_server ? '\`[server]\`' : `${formatNick(e.nick)}`} ${formatMessage(e.message)}`
 			break
 
 		case 'notice':
-			message = `\`[notice]\` ${e.from_server ? '\`[server]\`' : `**\`\`${e.nick}\`\`**`} ${e.message}`
+			message = `\`[notice]\` ${e.from_server ? '\`[server]\`' : `${formatNick(e.nick)}`} ${e.message}`
 			break
 
 		case 'nick':
-			message = `\\:left_right_arrow: \`\`${e.nick}\`\` is now **\`\`${e.new_nick}\`\`**`
+			message = `\\↔ ${formatNick(e.nick)} is now ${formatNick(e.new_nick)}`
 			break
 
 		case 'away':
-			message = `⇠ **\`\`${e.nick}\`\`** went away${e.message ? ` (${e.message})` : ''}`
+			message = `⇠ ${formatNick(e.nick)} went away${e.message ? ` (${e.message})` : ''}`
 			break
 
 		case 'back':
-			message = `⇢ **\`\`${e.nick}\`\`** is back${e.message ? ` (${e.message})` : ''}`
+			message = `⇢ ${formatNick(e.nick)} is back${e.message ? ` (${e.message})` : ''}`
 			break
 
 		case 'join':
-			message = `→ **\`\`${e.nick}\`\`** has joined`
+			message = `→ ${formatNick(e.nick)} has joined`
 			break
 
 		case 'part':
-			message = `← \`\`${e.nick}\`\` has left (Part${e.message ? `: ${e.message}` : ''})`
+			message = `← ${formatNick(e.nick)} has left${e.message ? ` (${e.message})` : ''}`
 			break
 
 		case 'quit':
-			message = `← \`\`${e.nick}\`\` has left (Quit${e.message ? `: ${e.message}` : ''})`
+			message = `← ${formatNick(e.nick)} has quit${e.message ? ` (${e.message})` : ''}`
 			break
 
 		case 'kick':
-			message = `← \`\`${e.kicked}\`\` has left (Kicked by **\`\`${e.nick}\`\`**${e.reason ? `: ${e.reason}` : ''})`
+			message = `← ${formatNick(e.kicked)} has left (Kicked by ${formatNick(e.nick)}${e.reason ? `: ${e.reason}` : ''})`
 			break
 	}
 
