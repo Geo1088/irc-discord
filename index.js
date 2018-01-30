@@ -210,7 +210,7 @@ function formatNick (nick) {
 }
 function formatMessage (msg) {
 	// Escape anything that could possibly be a markdown trigger, woo overkill
-	return msg.replace(/[!@#$%^&*()`\-=~_+[\]\\{}|;':",./<>?]/g, '\\$&')
+	return msg.replace(/[!@#$%^&*()`\-=~_+[\]\\{}|;'",]/g, '\\$&')
 }
 
 function handleIrcThing (type, e, discordChannelIds) {
