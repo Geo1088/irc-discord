@@ -2,6 +2,8 @@
 
 A script that allows you to chat on IRC without leaving Discord. Some setup required - this is not a public bot.
 
+**This project is unmaintained.** It's buggy and [discord-irc](https://github.com/reactiflux/discord-irc) probably does everything you want it to (it does everything I want it to which is why I ditched this project).
+
 ## Usage
 
 ```bash
